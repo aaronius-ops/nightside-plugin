@@ -6,9 +6,8 @@ summary looks like, and, only when you confirm it, sends it to your planet on [N
 It also keeps a private local archive of your agent transcripts and a metadata-only agent ledger for long
 multi-agent builds.
 
-Install with `/plugin install nightside --marketplace aaronius-ops/nightside-plugin` (Claude Code 2.1.275 or newer), or
-`/plugin marketplace add aaronius-ops/nightside-plugin` then `/plugin install nightside@nightside`. First upload:
-[INSTALL.md](../../INSTALL.md).
+Install with `/plugin marketplace add aaronius-ops/nightside-plugin` then `/plugin install nightside@nightside`.
+First upload: [INSTALL.md](../../INSTALL.md).
 
 | component | what it does |
 |---|---|
@@ -168,8 +167,10 @@ key. `/planet status` counts the uploads the server acknowledged (`sent.jsonl` i
 
 `/planet withdraw` prints this directory's project id. `/planet withdraw --confirm <project id>` sends one
 `DELETE <base>/api/manifests/projects/<project id>` with your token: the server deletes every manifest of that project
-you uploaded (never anyone else's), and the project is set private on this machine so nothing about it is offered
-publicly again unless you change that. The id must be a project captured on this machine.
+you uploaded (never anyone else's). On this machine the project is set private and its saved preview and manifest
+are deleted, so an old `--confirm <sha256>` cannot resend them; `upload --confirm` also refuses saved bytes whose
+visibility differs from the project's current setting. When both `GET /api/plugin` and the upload answer 404, the
+plugin says the server is not accepting uploads yet (rather than blaming the credential). The id must be a project captured on this machine.
 
 ### Signed manifests (envelope v1)
 

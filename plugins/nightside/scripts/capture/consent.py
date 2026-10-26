@@ -254,6 +254,16 @@ def upload(root: Path, cfg: dict, sha_prefix: str) -> tuple[int, str]:
     rc, msg, it = select(saved(root), sha_prefix)
     if rc:
         return rc, msg
+    # The saved bytes carry the visibility of the moment they were previewed. If the project was made private (or
+    # withdrawn) since, those bytes no longer match what the user wants: refuse them rather than send a stale choice.
+    try:
+        was = json.loads(it["bytes"]).get("visibility")
+    except ValueError:
+        was = None
+    now = S.effective_privacy(cfg, it["project_id"])[1]
+    if was != now:
+        return 3, (f"That preview was made when project {it['project_id']} was {was}; it is now {now}. Run the preview "
+                   "again and confirm the new sha256. Nothing was sent.")
     from capture import upload as U
     remote = U.configured(cfg, root)
     if remote is None:
@@ -262,7 +272,7 @@ def upload(root: Path, cfg: dict, sha_prefix: str) -> tuple[int, str]:
     b = A.check_envelope(json.loads(it["bytes"]))  # the gate, once more, on the exact bytes that leave
     if b != it["bytes"]:
         return 4, "The saved bytes are not canonical; run the preview again. Nothing was sent."
-    ok_server, rc, msg = U.check_server(base)  # the plugin must be at least the server's min_version
+    ok_server, rc, msg, info = U.check_server_status(base)  # the plugin must be at least the server's min_version
     if not ok_server:
         return rc, msg
     status, resp = U.send(base, token, b)
@@ -274,6 +284,9 @@ def upload(root: Path, cfg: dict, sha_prefix: str) -> tuple[int, str]:
         return 0, f"Sent {len(b)} bytes for project {it['project_id']} to {base}: {what}. sha256 {it['sha256']}"
     if status == 0:
         return 5, f"Could not reach {base} ({resp.get('error', 'network error')}). Nothing was stored; try again."
+    if status == 404 and info == 404:  # neither the info route nor the upload route exists there yet
+        return 6, (f"Not uploaded: {base} is not accepting uploads yet. Nothing was stored; your credential is fine. "
+                   "Try again once uploads open.")
     why = SERVER_SAYS.get(status, f"the server answered {status}")
     if status == 422 and resp.get("reason"):
         why += f" ({resp['reason']})"
@@ -285,13 +298,20 @@ def upload(root: Path, cfg: dict, sha_prefix: str) -> tuple[int, str]:
 def withdraw(root: Path, cfg: dict, project_id: str, known: list[str]) -> tuple[int, str]:
     """/planet withdraw --confirm <project id>: ask the configured server to delete every manifest of that project
     this token's user uploaded. The id must be one of this machine's captured projects (`known`), so a typo cannot
-    reach the network. Locally the project is also set private, so a later preview of it is private by default.
+    reach the network. Locally the project is set private and its saved preview and manifest are deleted, so a stale
+    `upload --confirm <old sha>` cannot resend the pre-withdraw bytes (upload() also refuses saved bytes whose
+    visibility differs from the project's current setting).
     Exit codes as upload(): 2 bad id, 0 done (or nothing configured), 5 no answer, 6 the server said no."""
     pid = (project_id or "").strip().lower()
     if not C.HEX16.match(pid) or pid not in known:
         return 2, "Not a project captured on this machine. Run /planet status to see the ids. Nothing was sent."
     set_visibility(cfg, "private", pid)
     C.save_config(cfg)
+    for suffix in (".envelope", ".json"):  # the saved preview and manifest were made before the withdraw: drop them
+        try:
+            (root / "outbox" / f"{pid}{suffix}").unlink()
+        except FileNotFoundError:
+            pass
     from capture import upload as U
     remote = U.configured(cfg, root)
     if remote is None:
@@ -306,6 +326,6 @@ def withdraw(root: Path, cfg: dict, project_id: str, known: list[str]) -> tuple[
                    "planet at the server's next publish. The project is now private here; nothing uploads unless you "
                    "preview and confirm again.")
     if status == 0:
-        return 5, f"Could not reach {base} ({resp.get('error', 'network error')}). Nothing was withdrawn; try again."
+        return 5, f"Could not reach {base} ({resp.get('error', 'network error')}). Nothing was withdrawn; try again. The project is private here."
     why = SERVER_SAYS.get(status, f"the server answered {status}")
     return 6, f"Not withdrawn: {why}. The project is private here."

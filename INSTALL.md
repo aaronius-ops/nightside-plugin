@@ -6,7 +6,7 @@ These steps are for macOS and Linux. Allow about 10 minutes.
 
 ## 1. What you need
 
-- **Claude Code**, recent. This release was tested on Claude Code 2.1.296. Run `claude --version` to check and `claude update` if yours is older. *(TODO for Aaron: the oldest version that works has not been tested. The plugin uses the `PostToolUseFailure`, `SubagentStart` and `PostModelSwitch` hooks, which older versions may lack.)*
+- **Claude Code**. Tested with Claude Code 2.1.296. If a /plugin command below is missing, update Claude Code first (`claude update`; `claude --version` shows yours).
 - **python3**, version 3.9 or newer. Run `python3 --version`. The Python that ships with macOS is fine. Nothing to install with pip.
 - **git**. Run `git --version`.
 - Your Nightside sign-in: the berkeley.edu Google account, or the address you were invited with.
@@ -18,12 +18,6 @@ Start Claude Code in any folder and type these two commands:
 ```
 /plugin marketplace add aaronius-ops/nightside-plugin
 /plugin install nightside@nightside
-```
-
-On Claude Code 2.1.275 or newer you can do it in one line instead:
-
-```
-/plugin install nightside --marketplace aaronius-ops/nightside-plugin
 ```
 
 From a terminal, the same thing is `claude plugin marketplace add aaronius-ops/nightside-plugin` followed by `claude plugin install nightside@nightside`.
@@ -84,18 +78,19 @@ When the preview looks right, confirm that project by its hash:
 /planet upload --confirm <sha256 from the preview>
 ```
 
-Only those exact bytes are sent, and only to the server you set. Each project needs its own confirm. Your planet updates within about 10 minutes, after the Nightside server's next publish.
+Only those exact bytes are sent, and only to the server you set. Each project needs its own confirm. Nightside rebuilds planets every few minutes once your upload is accepted; the first build can take up to about 15 minutes.
 
 ## 8. Make a project private or take it back
 
 - Private from now on: in that project, `/planet privacy private`, then preview and confirm again.
-- Remove it from Nightside: `/planet withdraw` prints the project's id. Then `/planet withdraw --confirm <project id>` deletes everything you uploaded for that project and marks it private on your machine. The island goes away at the next publish.
+- Remove it from Nightside: `/planet withdraw` prints the project's id. Then `/planet withdraw --confirm <project id>` deletes everything you uploaded for that project and marks it private on your machine. The island is removed at the next rebuild.
 - Disconnect completely: `/planet remote clear` removes the server address and your credential from this machine. Revoke the credential in the View panel too.
 
 ## Troubleshooting
 
 - **"Your Nightside plugin is X; ... needs Y or newer."** Your plugin is out of date. In a terminal run `claude plugin marketplace update nightside` and then `claude plugin update nightside@nightside`, restart Claude Code, and preview again.
 - **"UNSIGNED" in the preview, or "This upload is unsigned"**. The plugin has no signing key. Copy a fresh credential (step 3), run the `remote token` command again (step 4), then `/planet preview` and confirm the new hash.
+- **"... is not accepting uploads yet"**. Nightside has not opened uploads yet. Your credential is fine and nothing was stored. Try again later.
 - **"Not uploaded: the server did not accept it"**. Your credential expired or was revoked. Do steps 3 and 4 again, then preview and confirm.
 - **"no saved preview has that hash"**. The project changed since you looked. Run `/planet preview` again and confirm the new hash.
 - **The preview lists projects you did not mean to upload.** That is expected: it shows every project captured on this machine. Nothing is sent unless you confirm a hash, and you confirm one project at a time.

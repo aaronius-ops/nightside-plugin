@@ -244,21 +244,27 @@ def ask_server(base: str, timeout: float = TIMEOUT_S) -> tuple[int, dict]:
 
 
 def check_server(base: str, mine: str | None = None) -> tuple[bool, int, str]:
+    """(ok, exit code, message): check_server_status() without the info route's HTTP status."""
+    return check_server_status(base, mine)[:3]
+
+
+def check_server_status(base: str, mine: str | None = None) -> tuple[bool, int, str, int]:
     """(ok, exit code, message). ok=False stops the upload before any manifest bytes leave: the server cannot be reached
     (code 5, same words as a failed upload) or says this plugin is older than its `min_version` (code 7). A server that
     has no /api/plugin route (404), answers with an error, or sends something unreadable does not block the upload: the
-    upload route itself still decides, and says why."""
+    upload route itself still decides, and says why. The 4th value is the info route's HTTP status (0 = no answer):
+    a 404 there AND on the upload means the server is not accepting uploads yet (consent.upload says so)."""
     status, doc = ask_server(base)
     if status == 0:
-        return False, 5, f"Could not reach {base} ({doc.get('error', 'network error')}). Nothing was stored; try again."
+        return False, 5, f"Could not reach {base} ({doc.get('error', 'network error')}). Nothing was stored; try again.", 0
     need = doc.get("min_version") if status == 200 else None
     if not isinstance(need, str) or not _VER.fullmatch(need.strip()):
-        return True, 0, ""
+        return True, 0, "", status
     mine = plugin_version() if mine is None else mine
     if version_key(mine) < version_key(need):
         notes = doc.get("notes_url")
         more = f" See {notes}" if isinstance(notes, str) and notes.startswith("https://") else ""
         return False, 7, (f"Your Nightside plugin is {mine}; {base} needs {need.strip()} or newer. Update the Nightside plugin "
                           f"to that version, then preview and confirm again. "
-                          f"Nothing was sent.{more}")
-    return True, 0, ""
+                          f"Nothing was sent.{more}"), status
+    return True, 0, "", status

@@ -109,3 +109,54 @@ def test_withdraw_transport_builds_a_bodyless_delete_and_refuses_redirects(monke
     for bad in ("../x", "0123456789ABCDEF0", "", "0123456789abcde/"):
         with pytest.raises(ValueError):
             U.withdraw_project("https://nightside.world", "tok", bad)
+
+
+def _preview_sha(pid):
+    import re
+    pv = run_planet("preview").stdout
+    return re.search(r"== project " + pid + r".*?sha256 ([0-9a-f]{64})", pv, re.S).group(1)
+
+
+def test_withdraw_drops_the_saved_preview_so_an_old_sha_cannot_resend(env, monkeypatch):
+    pid = captured(env, monkeypatch)
+    assert P.main(["privacy", "public"]) == 0
+    old = _preview_sha(pid)
+    ob = env["root"] / "outbox"
+    assert (ob / f"{pid}.envelope").exists() and (ob / f"{pid}.json").exists()
+    monkeypatch.setattr(U, "withdraw_project", lambda *a: (200, {"status": "withdrawn", "deleted": 1}))
+    assert K.withdraw(env["root"], C.load_config(), pid, S.projects(env["root"]))[0] == 0
+    assert not (ob / f"{pid}.envelope").exists() and not (ob / f"{pid}.json").exists()
+    monkeypatch.setattr(U, "ask_server", lambda *a, **k: pytest.fail("a withdrawn preview must not reach the network"))
+    monkeypatch.setattr(U, "send", lambda *a, **k: pytest.fail("a withdrawn preview must not be sent"))
+    rc, msg = K.upload(env["root"], C.load_config(), old)
+    assert rc == 3 and "Run the preview again" in msg
+
+
+def test_upload_refuses_saved_bytes_whose_visibility_changed(env, monkeypatch):
+    pid = captured(env, monkeypatch)
+    assert P.main(["privacy", "public"]) == 0
+    old = _preview_sha(pid)
+    assert P.main(["privacy", "private"]) == 0          # changed after the preview
+    monkeypatch.setattr(U, "ask_server", lambda *a, **k: pytest.fail("stale visibility must not reach the network"))
+    monkeypatch.setattr(U, "send", lambda *a, **k: pytest.fail("stale visibility must not be sent"))
+    rc, msg = K.upload(env["root"], C.load_config(), old)
+    assert rc == 3 and "was public; it is now private" in msg and "Nothing was sent" in msg
+    new = _preview_sha(pid)                              # a fresh preview of the private project is fine
+    sent = []
+    monkeypatch.setattr(U, "ask_server", lambda *a, **k: (200, {"min_version": "0.2.0"}))
+    monkeypatch.setattr(U, "send", lambda base, tok, b: sent.append(b) or (201, {}))
+    K.upload(env["root"], C.load_config(), new)
+    assert len(sent) == 1 and json.loads(sent[0])["visibility"] == "private"
+
+
+@pytest.mark.parametrize("info,up,words", [(404, 404, "not accepting uploads yet"),
+                                           (200, 404, "the token is not valid")])
+def test_server_not_open_yet_is_not_an_expired_credential(env, monkeypatch, info, up, words):
+    captured(env, monkeypatch)
+    sha = _preview_sha(S.projects(env["root"])[0])
+    monkeypatch.setattr(U, "ask_server", lambda *a, **k: (info, {"min_version": "0.2.0"} if info == 200 else {}))
+    monkeypatch.setattr(U, "send", lambda *a, **k: (up, {}))
+    rc, msg = K.upload(env["root"], C.load_config(), sha)
+    assert rc == 6 and words in msg
+    if info == 404:
+        assert "credential is fine" in msg and "not valid" not in msg
