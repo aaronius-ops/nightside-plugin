@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+.DS_Store
+# never commit local capture or archive data, or credentials
+.nightside/
+upload_token
+upload_signing_key
+*.envelope

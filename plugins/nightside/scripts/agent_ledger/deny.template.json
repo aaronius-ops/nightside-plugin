@@ -1,0 +1,29 @@
+{
+  "_comment": "Template for a project's ledger deny list. Copy to <repo>/docs/agents/deny.json (the extractor picks it up next to ledger.jsonl), then replace every EXAMPLE pattern with your own: the people (team, clients, investors, advisors, counsel, venue contacts), vendors and places you never name, and your deal vocabulary. Without a deny file the ledger writes descriptions as the run's kind only. Every class is applied; list a class in ledger_skip to leave it out. Patterns are regexes, matched case-insensitively unless the class is in case_sensitive. Keep this file out of public outputs.",
+  "classes": {
+    "person": [
+      "\\bEXAMPLE[\\s_.-]*PERSON\\b",
+      "\\bEXAMPLE[\\s_.-]*ADVISOR\\b"
+    ],
+    "organisation": [
+      "\\bEXAMPLE[\\s_.-]*VENDOR\\b",
+      "\\bEXAMPLE[\\s_.-]*LAW[\\s_.-]*FIRM\\b"
+    ],
+    "money": [
+      "\\b(?:valuation|post-money|pre-money|cap\\s+table|runway|burn\\s+rate|salary|salaries|payroll|rent|stipend|revenue\\s+share|term\\s+sheets?|invoice\\w*)\\b"
+    ],
+    "deal": [
+      "\\b(?:deal\\s+terms?|license\\s+fee|minimum\\s+guarantee|landlord|lease|redlines?|LOI|NDA)\\b"
+    ],
+    "legal": [
+      "\\b(?:83\\(b\\)|409a|equity|vesting|option\\s+pool|stockholders?|board\\s+consent|counsel|attorneys?|litigation)\\b"
+    ],
+    "fundraise": [
+      "\\b(?:investors?|fundrais\\w*|pre-?seed|seed\\s+round|SAFEs?|warm\\s+intros?|deck\\s+views?)\\b"
+    ]
+  },
+  "allow": [],
+  "ledger_skip": [],
+  "case_sensitive": [],
+  "_ledger_classes": "Class policy: the ledger applies EVERY class in 'classes' to agent-run descriptions, plus a generic scrub that cannot be turned off (credentials and API keys, e-mails, phones, URLs, hosts, IPs, money amounts, home-directory paths). Keep people, organisations, money, deal, legal and fundraise classes on. If you add classes for infrastructure names, file names or code identifiers (the words engineering descriptions are made of), list them in ledger_skip, as Nightside does for its infra, file and code classes; never skip a class that holds names, deal terms or security words."
+}

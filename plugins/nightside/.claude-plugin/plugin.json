@@ -1,0 +1,18 @@
+{
+  "name": "nightside",
+  "version": "0.2.0",
+  "description": "Capture the SHAPE of your agentic work in each project (hook events, tool names, counts, timings; never prompts, inputs, outputs or paths) as a WorkflowManifest you can preview byte for byte, and grow a Nightside planet from it with /planet. Nothing uploads unless you set a Nightside server and confirm a project's exact bytes. Also keeps a private local archive of your agent transcripts and a metadata-only agent ledger for graph-engineered programs.",
+  "author": {
+    "name": "Aaron Selverston"
+  },
+  "homepage": "https://nightside.world",
+  "repository": "https://github.com/aaronius-ops/nightside-plugin",
+  "keywords": [
+    "nightside",
+    "agentic-workflows",
+    "program-graph",
+    "agent-ledger",
+    "capture",
+    "privacy"
+  ]
+}

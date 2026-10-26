@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "nightside/workflow-manifest/2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["user_id","project_id","category","graph_shape","agents","tools","skills","mcp_servers","infra_tags","runs","outcomes","links_to","privacy_tier"],
+  "properties": {
+    "user_id":      {"type": "string", "maxLength": 64},
+    "project_id":   {"type": "string", "pattern": "^[0-9a-f]{16}$"},
+    "project_name": {"type": "string", "maxLength": 60},
+    "summary":      {"type": "string", "maxLength": 420, "description": "<= 60 words"},
+    "label": {"type": "object", "additionalProperties": false, "required": ["text","category","source"],
+      "description": "the local public label (v2): made on the user's machine, approved in the consent preview",
+      "properties": {
+        "text":     {"type": "string", "maxLength": 40, "pattern": "^[A-Za-z0-9][A-Za-z0-9 &+-]{0,39}$"},
+        "category": {"enum": ["finance-bookkeeping","cron-daemon","knowledge-research","media-pipeline","eval-hillclimb","harness-testing","build-deploy-infra","writing-drafting","legal-governance","outreach-sales","world-simulation","personal-family","unclassified"]},
+        "source":   {"enum": ["heuristic","claude","user"]}}},
+    "category":     {"enum": ["finance-bookkeeping","cron-daemon","knowledge-research","media-pipeline","eval-hillclimb","harness-testing","build-deploy-infra","writing-drafting","legal-governance","outreach-sales","world-simulation","personal-family","unclassified"]},
+    "graph_shape":  {"enum": ["orchestrator+subagents","pipeline","cron-agent","human-in-loop","single"]},
+    "agents": {"type": "array", "maxItems": 64, "items": {
+      "type": "object", "additionalProperties": false, "required": ["role","model_tier","turns","minutes"],
+      "properties": {
+        "role":       {"type": "string", "maxLength": 40},
+        "model_tier": {"enum": ["haiku","sonnet","opus","fable","other"]},
+        "turns":      {"type": "integer", "minimum": 0},
+        "minutes":    {"type": "number", "minimum": 0}}}},
+    "tools":        {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}},
+    "skills":       {"type": "array", "items": {"type": "string", "maxLength": 60}},
+    "mcp_servers":  {"type": "array", "items": {"type": "string", "maxLength": 60}},
+    "infra_tags":   {"type": "array", "items": {"type": "string", "maxLength": 40}},
+    "runs": {"type": "object", "additionalProperties": false, "required": ["count","first_at","last_at","total_minutes"],
+      "properties": {"count": {"type": "integer"}, "first_at": {"type": "string", "format": "date-time"},
+                     "last_at": {"type": "string", "format": "date-time"}, "total_minutes": {"type": "number"}}},
+    "outcomes": {"type": "object", "additionalProperties": false, "required": ["files_written","prs","deploys","artifacts"],
+      "properties": {"files_written": {"type": "integer"}, "prs": {"type": "integer"}, "deploys": {"type": "integer"}, "artifacts": {"type": "integer"}}},
+    "links_to":     {"type": "array", "items": {"type": "string", "pattern": "^[0-9a-f]{16}$"}},
+    "privacy_tier": {"enum": ["rich","metadata"]}
+  }
+}

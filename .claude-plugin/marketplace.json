@@ -1,0 +1,24 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "nightside",
+  "description": "The Nightside plugin for Claude Code: grow a planet from the shape of your agentic work.",
+  "owner": {
+    "name": "Aaron Selverston",
+    "url": "https://github.com/aaronius-ops"
+  },
+  "plugins": [
+    {
+      "name": "nightside",
+      "source": "./plugins/nightside",
+      "description": "Capture the shape of your agentic work (tool names, counts, timings; never prompts, files, paths or outputs), preview it byte for byte, and upload only what you confirm to your Nightside planet.",
+      "version": "0.2.0",
+      "author": {
+        "name": "Aaron Selverston"
+      },
+      "homepage": "https://nightside.world",
+      "repository": "https://github.com/aaronius-ops/nightside-plugin",
+      "category": "productivity",
+      "keywords": ["nightside", "agentic-workflows", "capture", "privacy"]
+    }
+  ]
+}
